@@ -1,0 +1,9 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "MSXBridge CloudStream Worker", "version": "0.1.0" },
+  "paths": {
+    "/v1/health": { "get": { "responses": { "200": { "description": "worker health" } } } },
+    "/v1/plugins/inspect": { "post": { "responses": { "200": { "description": "compatibility report" } } } },
+    "/v1/resolve": { "post": { "responses": { "200": { "description": "normalized sources" } } } }
+  }
+}

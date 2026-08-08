@@ -1,0 +1,29 @@
+FROM gradle:8.12.1-jdk21 AS build
+
+ARG PHISHER_REPOSITORY=https://github.com/phisher98/cloudstream-desktop-unofficial.git
+ARG PHISHER_COMMIT=5fdb86da1f1b0de982547947bf69ff7edf0d1056
+
+RUN git clone --recurse-submodules "$PHISHER_REPOSITORY" /opt/phisherrepo \
+    && cd /opt/phisherrepo \
+    && git checkout "$PHISHER_COMMIT" \
+    && git submodule update --init --recursive
+
+COPY compat-adapter /opt/phisherrepo/compat-adapter
+COPY compat-fixture /opt/phisherrepo/compat-fixture
+
+RUN printf '\ninclude(":compat-adapter")\nproject(":compat-adapter").projectDir = file("compat-adapter")\ninclude(":compat-fixture")\nproject(":compat-fixture").projectDir = file("compat-fixture")\n' >> /opt/phisherrepo/settings.gradle.kts \
+    && cd /opt/phisherrepo \
+    && bash ./gradlew :compat-adapter:installDist :compat-fixture:jar -x spotlessKotlinCheck -x spotlessKotlin --no-daemon
+
+FROM eclipse-temurin:21-jre-jammy
+
+RUN useradd --system --create-home --uid 10001 compat
+COPY --from=build /opt/phisherrepo/compat-adapter/build/install/compat-adapter /opt/msxbridge-compat
+COPY --from=build /opt/phisherrepo/compat-fixture/build/libs/controlled-fixture.cs3 /opt/msxbridge-fixtures/controlled-fixture.cs3
+
+USER compat
+ENV PORT=8082 \
+    PLUGIN_DIR=/var/lib/msxbridge/plugins \
+    FIXTURE_DIR=/opt/msxbridge-fixtures
+EXPOSE 8082
+ENTRYPOINT ["/opt/msxbridge-compat/bin/compat-adapter"]

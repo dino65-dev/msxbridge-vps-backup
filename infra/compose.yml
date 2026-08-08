@@ -1,0 +1,90 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      HOST: 0.0.0.0
+      DATA_DIR: /var/lib/msxbridge
+      WORKER_URL: http://cloudstream-worker:8081
+      COMPAT_WORKER_URL: http://cloudstream-compat:8082
+    volumes:
+      - msxbridge-data:/var/lib/msxbridge
+    ports:
+      # Private administration only. Caddy deliberately does not expose /admin;
+      # reach this listener through an SSH tunnel or host-local VPN endpoint.
+      - "127.0.0.1:3000:3000"
+    networks: [private]
+    restart: unless-stopped
+    mem_limit: 768m
+
+  cloudstream-worker:
+    build: ../workers/cloudstream-linux
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid,nodev
+    volumes:
+      - cloudstream-plugins:/var/lib/msxbridge/plugins
+    networks: [private]
+    restart: unless-stopped
+    mem_limit: 512m
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  cloudstream-compat:
+    profiles: ["cloudstream-compat"]
+    build:
+      context: ../workers/cloudstream-linux
+      dockerfile: Dockerfile.compat
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid,nodev
+      - /home/compat:size=16m,noexec,nosuid,nodev
+    environment:
+      PLUGIN_DIR: /var/lib/msxbridge/plugins
+      MOVIEBOX_PLUGIN_FILE: MovieBoxProvider.cs3
+      # A comma-separated SHA-256 allowlist. Leave blank to deny all
+      # operator-provided archives; the controlled fixture remains test-only.
+      PLUGIN_ALLOWLIST_SHA256: ${PLUGIN_ALLOWLIST_SHA256:-43e4593be338e8c1ebe10ab9043e19cb2c9b79e64dea2c40b5e38d6f84a344e9}
+    volumes:
+      - cloudstream-plugins:/var/lib/msxbridge/plugins:ro
+    networks: [private]
+    restart: unless-stopped
+    mem_limit: 1024m
+    pids_limit: 128
+    cpus: 0.75
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+  caddy:
+    image: caddy:2.10-alpine
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?set PUBLIC_DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    networks: [private]
+    restart: unless-stopped
+
+networks:
+  private:
+    # Containers retain outbound access for HTTPS certificate issuance, metadata
+    # and authorized upstream media. Only Caddy publishes host ports.
+
+volumes:
+  msxbridge-data:
+  caddy-data:
+  caddy-config:
+  cloudstream-plugins:

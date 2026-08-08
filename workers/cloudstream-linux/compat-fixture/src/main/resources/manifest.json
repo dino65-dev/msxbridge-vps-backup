@@ -1,0 +1,6 @@
+{
+  "name": "MSXBridge Controlled Fixture",
+  "pluginClassName": "dev.msxbridge.fixture.ControlledFixturePlugin",
+  "version": 1,
+  "requiresResources": false
+}

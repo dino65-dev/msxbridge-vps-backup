@@ -1,0 +1,19 @@
+{$PUBLIC_DOMAIN} {
+  tls {
+    key_type rsa2048
+  }
+
+  @public path /healthz /d/* /play/* /subtitle/*
+  handle @public {
+    reverse_proxy api:3000
+  }
+
+  # Do not expose this route from the internet. Put the Caddy service behind
+  # Tailscale/WireGuard, or replace this block with a private listener.
+  @admin path /admin*
+  handle @admin {
+    respond "MSXBridge admin is private; reach it through the VPN listener." 403
+  }
+
+  respond "Not found" 404
+}

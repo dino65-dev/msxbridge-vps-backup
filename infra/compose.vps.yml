@@ -50,8 +50,6 @@ services:
     labels:
       caddy: https://dinmay.dpdns.org
       caddy.tls.key_type: rsa2048
-      # Keep the administrative API private. Only the endpoints required by
-      # MSX/Tizen clients are published through the shared Caddy instance.
       caddy.@msxbridge_public.path: /msx/start.json /msxbridge/start.json /msxbridge/healthz /msxbridge/d/* /msxbridge/play/*
       caddy.handle: "@msxbridge_public"
       caddy.handle.0_uri: "strip_prefix /msxbridge"
@@ -106,12 +104,42 @@ services:
       - no-new-privileges:true
     cap_drop: [ALL]
 
+  nuvio-moviebox-bridge:
+    profiles: ["cloudstream-compat"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.nuvio-moviebox-bridge
+    env_file:
+      - path: ../.env
+        required: true
+    environment:
+      PORT: 8090
+      COMPAT_WORKER_URL: http://cloudstream-compat:8082
+      CLOUDSTREAM_PROVIDER_ID: MovieBoxProvider
+      REQUEST_TIMEOUT_MS: 20000
+    depends_on:
+      cloudstream-compat:
+        condition: service_started
+    networks: [private, stremio-net]
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid,nodev
+    mem_limit: 128m
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+
 networks:
   private:
     name: msxbridge-private
   seafile-net:
     external: true
     name: seafile-net
+  stremio-net:
+    external: true
+    name: stremio-net
 
 volumes:
   msxbridge-data:

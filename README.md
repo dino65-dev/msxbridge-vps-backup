@@ -51,6 +51,60 @@ The private `POST /api/resolve` endpoint now creates an asynchronous source-reso
 
 The supplied StreamFlix TV HTML reference is a standalone HTML5 demo rather than an MSX content object. Its off-black/red TV visual direction and clear remote-first labels are reflected in the native MSX interface, but its custom `<video>` player is intentionally not embedded because doing so would bypass Samsung AVPlay.
 
+## Nuvio / Stremio MovieBox integration"
+
+if marker not in text:
+    text += r"""
+
+## Nuvio / Stremio MovieBox integration
+
+This repository also contains the working NuvioStreams integration for
+the CloudStream MovieBox compatibility bridge.
+
+It includes:
+
+- private MovieBox bridge;
+- CloudStream compatibility worker;
+- TMDB-to-MovieBox matching;
+- movie and TV episode support;
+- MovieBox stream/header propagation;
+- Nuvio provider adapter;
+- WARP/SOCKS Docker-LAN bypass;
+- external provider repo loader snapshots;
+- selective MediaFlow integration reference;
+- Stremio `proxyHeaders` handling;
+- installation and smoke-test scripts.
+
+See:
+
+```text
+nuvio/NUVIO-STREMIO-SETUP.md
+
+```
+
+Quick installation into an existing NuvioStreams checkout:
+
+```bash
+./nuvio/install-into-nuviostreams.sh
+
+```
+
+Then rebuild Nuvio and run:
+
+```bash
+./nuvio/test-moviebox.sh
+
+```
+
+The MovieBox bridge resolves media URLs only. MovieBox video traffic is
+intended to travel directly from the Stremio client to the provider CDN
+rather than through the VPS.
+"""
+p.write_text(text)
+print("README updated")
+else:
+print("README section already exists")
+
 ## License
 
 GPL-3.0-or-later. This project is intended for content the operator owns or is authorized to access.
